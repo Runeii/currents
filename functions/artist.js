@@ -1,17 +1,13 @@
 const fetch = require('node-fetch');
-const { createApolloFetch } = require('apollo-fetch');
-
-const fetchQL = createApolloFetch({
-  uri: 'http://77.172.153.23:5000/graphql',
-});
+const { fetchQl } = require('./utils');
 
 // TODO: Lowercase and alias matching
 const fetchArtistDetails = async (snap) => {
-	const { searchName } = snap ? snap.data() : { name: 'Radiohead' };
+	const { name: searchName } = snap.data();
 
 	let response;
 	try {
-		response = await fetchQL({
+		response = await fetchQl({
 			query: `query getArtistByName($name: String) {
 				artists(condition: {name: $name}){
 					nodes {
@@ -25,7 +21,7 @@ const fetchArtistDetails = async (snap) => {
 		})
 	} catch (error) {
 		console.error('ERROR (handled):', error);
-		return fetchArtistDetails(snap, context);
+		return fetchArtistDetails(snap);
 	}
 
 	const results = response.data.artists.nodes;

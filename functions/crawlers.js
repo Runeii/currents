@@ -2,7 +2,7 @@ const scrapeIt = require("scrape-it");
 const dayjs = require('dayjs');
 
 // Stable
-const scrapePitchfork = async () => {
+const scrapePitchforkAlbums = async () => {
 	const posts = await scrapeIt('https://pitchfork.com/reviews/albums/', {
 		posts: {
 			listItem: '.review',
@@ -23,6 +23,11 @@ const scrapePitchfork = async () => {
 					selector: ".review__artwork img",
 					attr: "src"
 				},
+				url: {
+					selector: '.review__link',
+					attr: 'href',
+					convert: string =>  `https://pitchfork.com${string}`,
+				},
 				date: {
 					selector: ".pub-date",
 					attr: "datetime",
@@ -31,7 +36,45 @@ const scrapePitchfork = async () => {
 			}
 		},
 	});
-	return posts.data.posts.map(post => ({...post, type: 'album'}));
+	return posts.data.posts.map(post => ({...post, source: 'pitchfork', type: 'album'}));
+};
+
+const scrapePitchforkTracks = async () => {
+	const posts = await scrapeIt('https://pitchfork.com/reviews/tracks/', {
+		posts: {
+			listItem: '.track-collection-item',
+			data: {
+				id: {
+					selector: '.track-collection-item__track-link',
+					attr: 'href',
+					convert: string => {
+						const split = string.split('/');
+						return `${split[2]}-${split[3]}`;
+					}
+				},
+				title: ".track-collection-item__title",
+				artists: {
+					listItem: ".artist-list li",
+				},
+				image: {
+					selector: ".track-collection-item__img",
+					attr: "src"
+				},
+				url: {
+					selector: '.track-collection-item__track-link',
+					attr: 'href',
+					convert: string =>  `https://pitchfork.com${string}`,
+				},
+				date: {
+					selector: ".pub-date",
+					attr: "datetime",
+					convert: string => new Date(string)
+				},
+			}
+		},
+	});
+
+	return posts.data.posts.map(post => ({...post, source: 'pitchfork', type: 'track'}));
 };
 
 const scrapeBleep = async () => {
@@ -52,6 +95,11 @@ const scrapeBleep = async () => {
 					selector: ".product-image-box img",
 					attr: "src"
 				},
+				url: {
+					selector: '.main-product-image',
+					attr: 'href',
+					convert: string =>  `https://bleep.com${string}`,
+				},
 				date: {
 					selector: ".product-release-date",
 					convert: string =>  dayjs(string, 'MMMM D, YYYY').toDate(),
@@ -60,7 +108,7 @@ const scrapeBleep = async () => {
 		},	
 	});
 
-	return posts.data.posts.map(post => ({...post, type: 'track'}));
+	return posts.data.posts.map(post => ({...post, source: 'bleep', type: 'track'}));
 };
 
 // Experimental
@@ -82,6 +130,10 @@ const scrapeStereogum = async () => {
 					selector: ".image-holder img",
 					attr: "src"
 				},
+				url: {
+					selector: '.image-holder a',
+					attr: 'href',
+				},
 				date: {
 					selector: ".date",
 					convert: string =>  dayjs(string.replace(' - ', ' '), 'MMMM D, YYYY H:mm a').toDate(),
@@ -100,6 +152,7 @@ const scrapeStereogum = async () => {
 			...post,
 			title,
 			artists: [artist],
+			source: 'stereogum',
 			type: 'track'
 		}
 	}).filter(post => post);
@@ -107,6 +160,7 @@ const scrapeStereogum = async () => {
 
 module.exports = {
 	scrapeBleep,
-	scrapePitchfork,
+	scrapePitchforkAlbums,
+	scrapePitchforkTracks,
 	scrapeStereogum,
 }
