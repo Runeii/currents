@@ -44,6 +44,7 @@ const fetchArtistDetails = async (snap) => {
 	}
 
 	console.error('Unable to find an artist or alias on MusicBrainz!', searchName, name)
+	return null;
 }
 
 module.exports = {

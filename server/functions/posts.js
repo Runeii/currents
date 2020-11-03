@@ -38,6 +38,8 @@ const extractMediaDetails = async (snap, db) => {
 		return;
 	}
 
+	console.log('Found media for', url)
+
 	if (mediaUrl.includes('youtube')) {
 		details = {
 			id: getIdFromYoutubeUrl(mediaUrl),
@@ -88,7 +90,7 @@ const submitResults = async(results, db) => {
 		}
 	} catch (error) {
 		console.error('Error retrieving last scrape timestamp', error);
-	};
+	}
 
 	results.map(posts => {
 		posts.map(post => {

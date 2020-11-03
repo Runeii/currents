@@ -21,7 +21,7 @@ const getIdFromSpotifyUrl = (url) => {
 
 const getIdFromYoutubeUrl = (url) => {
 	const parsedUrl = url.split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
-	return (parsedUrl[2] !== undefined) ? parsedUrl[2].split(/[^0-9a-z_\-]/i)[0] : parsedUrl[0];
+	return (parsedUrl[2] !== undefined) ? parsedUrl[2].split(/[^0-9a-z_-]/i)[0] : parsedUrl[0];
 }
 
 const fetchQl = async ({ query, variables }) => {
@@ -43,6 +43,7 @@ const fetchQl = async ({ query, variables }) => {
 		throw error;
 	}
 }
+
 const pause = timeout => new Promise((resolve) => setTimeout(resolve, timeout));
 
 module.exports = {

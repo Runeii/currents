@@ -9,7 +9,7 @@ const db = admin.firestore();
 
 exports.createArtist = functions.firestore.document('artists/{id}').onCreate(snap => fetchArtistDetails(snap));
 exports.extractMedia = functions.firestore.document('posts/{id}').onCreate(snap => extractMediaDetails(snap, db));
-exports.updatePosts = functions.pubsub.schedule('every 30 minutes').onRun(() => updatePostsDatabase(db));
+exports.updatePosts = functions.pubsub.schedule('every 60 minutes').onRun(() => updatePostsDatabase(db));
 
 // TEST ENDPOINTS
 exports.extractMediaTest = functions.https.onRequest(async (req, res) => {
