@@ -1,10 +1,21 @@
 const admin = require('firebase-admin');
 const { createId, getIdFromBandcampUrl, getIdFromYoutubeUrl, getIdFromSpotifyUrl } = require('./utils');
-const { scrapeBleep, scrapeStereogum, scrapePitchforkTracks, scrapePitchforkAlbums } = require('./crawlers');
+const { scrapeGvb, scrapeStereogum, scrapePitchforkTracks, scrapePitchforkAlbums } = require('./crawlers');
 const scrapeIt = require('scrape-it');
 
 const SELECTORS = {
 	bleep: '.contents .contents__embed iframe',
+	gvb: {
+		selector: '.pod-content .lazyload-placeholder',
+		attr: "data-pod",
+		convert: string => {
+			if (!string) {
+				return null;
+			}
+			const html = JSON.parse(string).html;
+			return html.match(/src="[^"]*"/gm).map(x => x.replace(/.*src="([^"]*)".*/, '$1'))[0];
+		},
+	},
 	pitchfork: {
 		selector: '.contents .contents__embed iframe',
 		attr: "src"
@@ -39,7 +50,6 @@ const extractMediaDetails = async (snap, db) => {
 	}
 
 	console.log('Found media for', url)
-
 	if (mediaUrl.includes('youtube')) {
 		details = {
 			id: getIdFromYoutubeUrl(mediaUrl),
@@ -60,7 +70,7 @@ const extractMediaDetails = async (snap, db) => {
 			type: 'bandcamp'
 		}
 	}
-
+	console.log(details)
 	const mediaRef = db.collection('media').doc(createId(`${details.type}_${details.id}`));
 	const doc = await mediaRef.get();
 
@@ -150,7 +160,13 @@ const submitResults = async(results, db) => {
 }
 
 const updatePostsDatabase = async (db) => {
-	const scraperPromises = [scrapeBleep(), scrapeStereogum(), scrapePitchforkTracks(), scrapePitchforkAlbums()];
+	const scraperPromises = [
+		//scrapeBleep(),
+		scrapeGvb(),
+		scrapeStereogum(),
+		scrapePitchforkTracks(),
+		//scrapePitchforkAlbums()
+	];
 	const results = await Promise.all(scraperPromises)
 	await submitResults(results, db);
 };

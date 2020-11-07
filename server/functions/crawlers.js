@@ -113,6 +113,7 @@ const scrapeBleep = async () => {
 
 // Experimental
 const scrapeStereogum = async () => {
+	console.log('Scraping Stereogum...');
 	const posts = await scrapeIt('https://www.stereogum.com/music/', {
 		posts: {
 			listItem: '.post.row',
@@ -123,9 +124,6 @@ const scrapeStereogum = async () => {
 					convert: string => string.replace('https://', '').split('/')[1],
 				},
 				title: "h2",
-				artists: {
-					listItem: ".review__title-artist li",
-				},
 				image: {
 					selector: ".image-holder img",
 					attr: "src"
@@ -146,11 +144,12 @@ const scrapeStereogum = async () => {
 		const matches = post.title.match(/(?<artist>.*) – “(?<title>.*)”/);
 		const { title, artist } = matches && matches.groups ? matches.groups : {};
 		if (!title || !artist) {
+			console.log('Failed:', post.title, artist, title);
 			return null;
 		}
 		return {
 			...post,
-			title,
+			title: title.slice(1, -1),
 			artists: [artist],
 			source: 'stereogum',
 			type: 'track'
@@ -158,8 +157,58 @@ const scrapeStereogum = async () => {
 	}).filter(post => post);
 };
 
+// @TODO: Fix dates
+const scrapeGvb = async () => {
+	const posts = await scrapeIt('https://www.gorillavsbear.net/', {
+		posts: {
+			listItem: '.main-content .blogroll-inner article',
+			data: {
+				id: {
+					selector: '.title',
+					attr: 'href',
+					convert: string => string.replace('//', '').split('/')[1],
+				},
+				title: ".title",
+				image: {
+					selector: "figure a",
+					attr: "data-image",
+					convert: string =>  `https:${string}`,
+				},
+				url: {
+					selector: '.title',
+					attr: 'href',
+					convert: string =>  `https:${string}`,
+				},
+				date: {
+					selector: "time",
+					attr: "datetime",
+					convert: string => string ? dayjs(string.replace(' +0000', ''), 'YYYY-MM-DD HH:mm:ss').toDate() : '',
+				},
+			}
+		},	
+	});
+
+	return posts.data.posts.map(post => {
+		const matches = post.title.replace('video: ', '').replace('premiere: ', '').match(/(?<artist>.*) – (?<title>.*)/);
+		const { title, artist } = matches && matches.groups ? matches.groups : {};
+
+		if (!title || !artist) {
+			return null;
+		}
+
+		return {
+			...post,
+			title,
+			artists: [artist],
+			source: 'gvb',
+			type: 'track'
+		}
+	}).filter(post => post);
+};
+
 module.exports = {
 	scrapeBleep,
+	scrapeGvb,
 	scrapePitchforkAlbums,
 	scrapePitchforkTracks,
 	scrapeStereogum,
