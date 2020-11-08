@@ -1,9 +1,10 @@
 const admin = require('firebase-admin');
 const { createId, getIdFromBandcampUrl, getIdFromYoutubeUrl, getIdFromSpotifyUrl } = require('./utils');
 const { scrapeGvb, scrapeStereogum, scrapePitchforkTracks, scrapePitchforkAlbums } = require('./crawlers');
+const dayjs = require('dayjs');
 const scrapeIt = require('scrape-it');
 
-const SELECTORS = {
+const EMBED_SELECTORS = {
 	bleep: '.contents .contents__embed iframe',
 	gvb: {
 		selector: '.pod-content .lazyload-placeholder',
@@ -26,30 +27,24 @@ const SELECTORS = {
 	},
 }
 
-const extractMediaDetails = async (snap, db) => {
-	const { source, url } = snap.data();
+const DATE_SELECTORS = {
+	gvb: {
+		selector: ".page-header .byline time",
+		attr: "datetime",
+		convert: string => string ? dayjs(string.replace(' +0000', ''), 'YYYY-MM-DD HH:mm:ss').toDate() : '',
+	},
+}
 	
-	if (source === 'bleep') {
-		return;
-	}
-
-	const response = await scrapeIt(url, {
-		embed: SELECTORS[source],
-	});
-
+const extractMediaDetails = async (mediaUrl, snap, db) => {
 	let details = {
 		id: null,
 		type: null,
 	}
 
-	const mediaUrl = response.data.embed;
-
 	if (!mediaUrl) {
-		console.log('No media found for', url)
 		return;
 	}
 
-	console.log('Found media for', url)
 	if (mediaUrl.includes('youtube')) {
 		details = {
 			id: getIdFromYoutubeUrl(mediaUrl),
@@ -70,7 +65,7 @@ const extractMediaDetails = async (snap, db) => {
 			type: 'bandcamp'
 		}
 	}
-	console.log(details)
+
 	const mediaRef = db.collection('media').doc(createId(`${details.type}_${details.id}`));
 	const doc = await mediaRef.get();
 
@@ -84,6 +79,28 @@ const extractMediaDetails = async (snap, db) => {
 	await snap.ref.set({
 		media: mediaRef,
 	}, { merge: true })
+}
+
+const extractAdditionalMeta = async (snap, db) => {
+	const { source, url } = snap.data();
+	
+	if (source === 'bleep') {
+		return;
+	}
+
+	const requiresDateSearch = DATE_SELECTORS[source];
+
+	const response = await scrapeIt(url, {
+		embed: EMBED_SELECTORS[source],
+		...(requiresDateSearch ? { date: DATE_SELECTORS[source] } : {}),
+	});
+
+	const { embed, date } = response.data;
+	extractMediaDetails(embed, snap, db);
+
+	if (requiresDateSearch) {
+		await snap.ref.update({ date }, { merge: true })
+	}
 }
 
 const submitResults = async(results, db) => {
@@ -172,6 +189,7 @@ const updatePostsDatabase = async (db) => {
 };
 
 module.exports = {
+	extractAdditionalMeta,
 	extractMediaDetails,
 	updatePostsDatabase,
 }

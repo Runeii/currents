@@ -56,68 +56,109 @@ class _IndexPageState extends State<IndexPage> {
 }
 
 class PostsList extends StatelessWidget {
+  Future<List<Map<String, QueryDocumentSnapshot>>> _getSupportingData(
+      List posts) async {
+    final mediaRefs = posts.map((post) => post.data()['media']).toList();
+    final artistRefs = posts.map((post) => post.data()['artists'][0]).toList();
+    final mediaSnapshots = await database.mediaByRefs(mediaRefs);
+    final artistSnapshots = await database.artistsByRefs(artistRefs);
+    final orderedMedia = Map.fromIterable(mediaSnapshots,
+        key: (doc) => doc.id as String,
+        value: (doc) => doc as QueryDocumentSnapshot);
+    final orderedArtists = Map.fromIterable(artistSnapshots,
+        key: (doc) => doc.id as String,
+        value: (doc) => doc as QueryDocumentSnapshot);
+    return [orderedMedia, orderedArtists];
+  }
+
+  postsOrderedByData(snapshot) {
+    List ordered = List.from(snapshot.data.docs);
+    ordered.sort((a, b) =>
+        (b.data()['date'] != '' ? b.data()['date'] : Timestamp.now()).compareTo(
+            (a.data()['date'] != '' ? a.data()['date'] : Timestamp.now())));
+    return ordered;
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
       stream: database.posts(),
       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (!snapshot.hasData) return new Text('Loading...');
-        final ordered = List.from(snapshot.data.docs);
-        ordered.sort((a, b) => (b.data()['date'] != ''
-                ? b.data()['date']
-                : Timestamp.now())
-            .compareTo(
-                (a.data()['date'] != '' ? a.data()['date'] : Timestamp.now())));
-        return new ListView.builder(
-          shrinkWrap: true,
-          itemCount: ordered.length,
-          itemBuilder: (BuildContext context, int index) =>
-              PostRow(ordered[index]),
-        );
+        final ordered = postsOrderedByData(snapshot);
+        return new FutureBuilder(
+            future: _getSupportingData(ordered),
+            builder: (BuildContext futureBuildContext,
+                AsyncSnapshot<List<Map>> supportingData) {
+              if (!supportingData.hasData)
+                return new Text('Loading supporting data...');
+              return Container(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: ordered.length,
+                  itemBuilder: (BuildContext context, int index) => PostRow(
+                    artists: supportingData.data[1],
+                    media: supportingData.data[0],
+                    post: ordered[index],
+                  ),
+                ),
+              );
+            });
       },
     );
   }
 }
 
 class PostRow extends StatelessWidget {
-  PostRow(this.post);
+  PostRow({this.post, this.artists, this.media});
   final QueryDocumentSnapshot post;
+  final Map<String, QueryDocumentSnapshot> artists;
+  final Map<String, QueryDocumentSnapshot> media;
+
+  artistDetails() {
+    if (post['artists'] == null || post['artists'][0] == null) {
+      return {
+        "name": 'Unknown Artist',
+      };
+    }
+    DocumentReference ref = post['artists'][0];
+    return artists[ref.id].data() ?? null;
+  }
+
+  mediaDetails() =>
+      media[post['media'].id].data() ?? {"type": 'None', "isDummy": true};
+
+  handleTap() async {
+    final data = post.data();
+    final media = this.mediaDetails();
+
+    if (media['isDummy']) {
+      print('Failed to find mediaRef');
+      return;
+    }
+
+    final track = new Track(
+      artist: this.artistDetails()['name'],
+      title: data['title'],
+      src: media['url'],
+      image: data['image'],
+    );
+
+    globalPlayer.play(track);
+  }
 
   @override
   Widget build(BuildContext context) {
     return new GestureDetector(
-      onTap: () async {
-        final data = post.data();
-        final doc = await post['media'].get();
-        if (!doc.exists) {
-          print('Failed to find mediaRef');
-        }
-        final media = await doc.data();
-        print(media);
-        final track = new Track(
-          artist: 'None',
-          title: data['title'],
-          src: media['url'],
-          image: data['image'],
-        );
-        globalPlayer.play(track);
-      },
+      onTap: handleTap,
       child: Container(
         child: Row(
           children: [
             Column(
               children: [
                 Text(post['title']),
-                FutureBuilder(
-                    future: database.artist(post['artists'][0]),
-                    builder: (BuildContext context,
-                        AsyncSnapshot<DocumentSnapshot> snapshot) {
-                      return (snapshot.data != null &&
-                              snapshot.data['name'] != null)
-                          ? Text(snapshot.data['name'])
-                          : Text('');
-                    }),
-                Text(post['date'].toString()),
+                Text(this.artistDetails()['name']),
+                Text("${this.mediaDetails()['type']} via ${post['source']}"),
               ],
               crossAxisAlignment: CrossAxisAlignment.start,
             ),

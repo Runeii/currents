@@ -2,24 +2,28 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
 const { fetchArtistDetails } = require('./artist');
-const { extractMediaDetails, updatePostsDatabase } = require('./posts');
+const { extractAdditionalMeta, updatePostsDatabase } = require('./posts');
 
 admin.initializeApp();
 const db = admin.firestore();
 
 exports.createArtist = functions.firestore.document('artists/{id}').onCreate(snap => fetchArtistDetails(snap));
-exports.extractMedia = functions.firestore.document('posts/{id}').onCreate(snap => extractMediaDetails(snap, db));
+exports.extractAdditionalMeta = functions.firestore.document('posts/{id}').onCreate(snap => extractAdditionalMeta(snap, db));
 exports.updatePosts = functions.pubsub.schedule('every 60 minutes').onRun(() => updatePostsDatabase(db));
 
 // TEST ENDPOINTS
-exports.extractMediaTest = functions.https.onRequest(async (req, res) => {
+exports.extractAdditionalMetaTest = functions.https.onRequest(async (req, res) => {
 	const dummySnap = {
-		data: () => ({ url: 'https://pitchfork.com/reviews/tracks/tyler-childers-long-violent-history/' }),
+		data: () => ({
+			url: 'https://www.gorillavsbear.net/sufjan-stevens-america/',
+			source: 'gvb'
+		}),
 		ref: {
-			set: payload => console.log('Would update with', payload)
+			set: payload => console.log('Would set with', payload),
+			update: payload => console.log('Would update with', payload)
 		}
 	}
-	await extractMediaDetails(dummySnap, db);
+	await extractAdditionalMeta(dummySnap, db);
 	res.status(200).end();
 });
 

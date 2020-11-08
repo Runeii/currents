@@ -52,7 +52,10 @@ const scrapePitchforkTracks = async () => {
 						return `${split[2]}-${split[3]}`;
 					}
 				},
-				title: ".track-collection-item__title",
+				title: {
+					selector: ".track-collection-item__title",
+					convert: string => string.slice(1, -1),
+				},
 				artists: {
 					listItem: ".artist-list li",
 				},
@@ -149,7 +152,7 @@ const scrapeStereogum = async () => {
 		}
 		return {
 			...post,
-			title: title.slice(1, -1),
+			title,
 			artists: [artist],
 			source: 'stereogum',
 			type: 'track'
@@ -178,11 +181,6 @@ const scrapeGvb = async () => {
 					selector: '.title',
 					attr: 'href',
 					convert: string =>  `https:${string}`,
-				},
-				date: {
-					selector: "time",
-					attr: "datetime",
-					convert: string => string ? dayjs(string.replace(' +0000', ''), 'YYYY-MM-DD HH:mm:ss').toDate() : '',
 				},
 			}
 		},	
