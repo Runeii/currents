@@ -2,6 +2,7 @@ library thing;
 
 import 'dart:async';
 
+//import 'package:currents/spotify.dart';
 import 'package:flutter/material.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
@@ -47,6 +48,7 @@ class Player {
     streamController = new StreamController<StreamValues>();
     youtube = new YoutubeExplode();
     vlc = new VlcPlayerController();
+    //connectToSpotifyRemote();
   }
 
   pause() {
@@ -69,7 +71,7 @@ class Player {
         await vlc.setStreamUrl(string, isLocalMedia: false);
       }
     }
-    if (currentTrack.src != track.src) {
+    if (track != null && currentTrack.src != track.src) {
       return;
     }
     vlc.play();
@@ -143,23 +145,7 @@ class _PlayerWidgetState extends State<PlayerWidget> {
                 ),
               ],
             ),
-          Column(
-            children: [
-              Text(
-                currentTrack?.title ?? '',
-                style: TextStyle(color: Colors.white),
-              ),
-              Text(
-                currentTrack?.artist ?? '',
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-          ),
-          Spacer(
-            flex: 10,
-          ),
+          DetailsPane(currentTrack),
           PlayButton(isBuffering, isPlaying)
         ],
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -167,6 +153,35 @@ class _PlayerWidgetState extends State<PlayerWidget> {
       height: 48.0,
       color: Colors.blueAccent,
       padding: EdgeInsets.symmetric(vertical: 4.0, horizontal: 16),
+    );
+  }
+}
+
+class DetailsPane extends StatelessWidget {
+  DetailsPane(this.currentTrack);
+  final currentTrack;
+
+  @override
+  Widget build(BuildContext buildContext) {
+    return Flexible(
+      child: Column(
+        children: [
+          Text(
+            currentTrack?.title ?? '',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.white),
+          ),
+          Text(
+            currentTrack?.artist ?? '',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.white),
+          ),
+        ],
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+      flex: 10,
+      fit: FlexFit.tight,
     );
   }
 }

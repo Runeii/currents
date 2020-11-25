@@ -111,6 +111,7 @@ class PostsList extends StatelessWidget {
 
 class PostRow extends StatelessWidget {
   PostRow({this.post, this.artists, this.media});
+
   final QueryDocumentSnapshot post;
   final Map<String, QueryDocumentSnapshot> artists;
   final Map<String, QueryDocumentSnapshot> media;
@@ -132,7 +133,7 @@ class PostRow extends StatelessWidget {
     final data = post.data();
     final media = this.mediaDetails();
 
-    if (media['isDummy']) {
+    if (media['isDummy'] != null) {
       print('Failed to find mediaRef');
       return;
     }

@@ -32,6 +32,11 @@ dependencies:
   cloud_firestore: ^0.14.1+3
   flutter_vlc_player: '4.0.2'
   youtube_explode_dart: '1.6.2'
+  spotify_sdk:
+    git:
+      url: git://github.com/brim-borium/spotify_sdk.git
+      ref: master
+  flutter_dotenv: 2.1.0
 
 
 dev_dependencies:
