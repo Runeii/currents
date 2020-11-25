@@ -2,8 +2,9 @@ library thing;
 
 import 'dart:async';
 
-//import 'package:currents/spotify.dart';
+import 'package:currents/spotify.dart';
 import 'package:flutter/material.dart';
+import 'package:spotify_sdk/spotify_sdk.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 
@@ -11,6 +12,7 @@ Player globalPlayer;
 YoutubeExplode youtube;
 VlcPlayerController vlc;
 
+//SpotifySdk spotify
 class Track {
   String src;
   String artist;
@@ -48,7 +50,7 @@ class Player {
     streamController = new StreamController<StreamValues>();
     youtube = new YoutubeExplode();
     vlc = new VlcPlayerController();
-    //connectToSpotifyRemote();
+    connectToSpotifyRemote();
   }
 
   pause() {
