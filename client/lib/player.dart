@@ -14,17 +14,30 @@ VlcPlayerController vlc;
 
 //SpotifySdk spotify
 class Track {
+  String id;
   String src;
   String artist;
   String album;
+  String source;
   String title;
   String image;
+  String type;
 
-  Track({String artist, String src, String title, String image}) {
+  Track(
+      {String artist,
+      String id,
+      String src,
+      String title,
+      String image,
+      String source,
+      String type}) {
     this.artist = artist;
+    this.id = id;
+    this.source = source;
     this.src = src;
     this.title = title;
     this.image = image;
+    this.type = type;
   }
 }
 
@@ -59,27 +72,44 @@ class Player {
     this.updateUI();
   }
 
-  play([track]) async {
-    this.pause();
+  play() async {
+    print('=====================Tried to play');
+    if (currentTrack.src == null) {
+      return;
+    }
+    print('=====================Passed');
+    print(currentTrack.source);
     isBuffering = true;
-    if (track != null) {
-      currentTrack = track;
-      this.updateUI();
-      var manifest = await youtube.videos.streamsClient.getManifest(track.src);
+    if (currentTrack.source == 'youtube') {
+      print('=====================YouTube');
+      var manifest =
+          await youtube.videos.streamsClient.getManifest(currentTrack.src);
       var streamInfo = manifest.audioOnly.withHighestBitrate();
       if (streamInfo != null) {
         var stream = streamInfo.url;
         var string = stream.toString();
         await vlc.setStreamUrl(string, isLocalMedia: false);
       }
+      vlc.play();
     }
-    if (track != null && currentTrack.src != track.src) {
-      return;
+    if (currentTrack.source == 'spotify') {
+      print('=====================Spotify');
+      SpotifySdk.play(spotifyUri: "spotify:track:${currentTrack.id}");
+      print('===========Played spotify${currentTrack.id}');
     }
-    vlc.play();
     isPlaying = true;
     isBuffering = false;
     this.updateUI();
+  }
+
+  playTrack(track) async {
+    if (track == null) {
+      return;
+    }
+    this.pause();
+    currentTrack = track;
+    this.updateUI();
+    this.play();
   }
 
   playMediaRef(mediaRef) async {
@@ -88,7 +118,7 @@ class Player {
       print('Failed to find mediaRef');
     }
     final data = await doc.data();
-    play(data['url']);
+    playTrack(data);
   }
 
   updateUI() {

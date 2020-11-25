@@ -141,13 +141,15 @@ class PostRow extends StatelessWidget {
     }
 
     final track = new Track(
-      artist: this.artistDetails()['name'],
-      title: data['title'],
-      src: media['url'],
-      image: data['image'],
-    );
+        artist: this.artistDetails()['name'],
+        id: media['id'],
+        title: data['title'],
+        src: media['url'],
+        image: data['image'],
+        source: media['type'],
+        type: data['type']);
 
-    globalPlayer.play(track);
+    globalPlayer.playTrack(track);
   }
 
   @override

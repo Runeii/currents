@@ -6,8 +6,6 @@ Future<void> connectToSpotifyRemote() async {
   bool loading = false;
   try {
     loading = true;
-    print(DotEnv().env['SPOTIFY_CLIENT_ID'].toString());
-    print(DotEnv().env['SPOTIFY_REDIRECT_URL'].toString());
     var result = await SpotifySdk.connectToSpotifyRemote(
         clientId: DotEnv().env['SPOTIFY_CLIENT_ID'].toString(),
         redirectUrl: DotEnv().env['SPOTIFY_REDIRECT_URL'].toString());
